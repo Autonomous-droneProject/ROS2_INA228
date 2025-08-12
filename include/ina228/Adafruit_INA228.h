@@ -141,15 +141,15 @@ typedef enum _alert_type {
  *            INA228 Current and Power Sensor
  */
 namespace ina228 {
-class INA228 : public Adafruit_INA2xx {
+class Adafruit_INA228 : public Adafruit_INA2xx {
  public:
-  Adafruit_INA228();
-  bool begin(uint8_t i2c_addr = INA228_I2CADDR_DEFAULT, bool skipReset = false);
+  Adafruit_INA228(std::string i2c_bus = "/dev/i2c-1", uint8_t i2c_addr = INA2XX_I2CADDR_DEFAULT);
+  bool begin(bool skipReset = false);
   void reset(void) override;
 
   // INA228 specific functions
-  float readEnergy(void);
-  float readCharge(void);
+  double readEnergy(void);
+  double readCharge(void);
   INA228_AlertType getAlertType(void);
   void setAlertType(INA228_AlertType alert);
   void resetAccumulators(void);
@@ -161,7 +161,7 @@ class INA228 : public Adafruit_INA2xx {
   //Adafruit_I2CRegister* AlertLimit; ///< BusIO Register for AlertLimit
 
  protected:
-  void _updateShuntCalRegister(void) override;
+  void _updateShuntCalRegister(void) override ;
 };
 };
 

@@ -409,9 +409,11 @@ void Adafruit_INA2xx::setCurrentConversionTime(INA2XX_ConversionTime time) {
 */
 /**************************************************************************/
 INA2XX_ConversionTime Adafruit_INA2xx::getVoltageConversionTime(void) {
-  Adafruit_I2CRegisterBits voltage_conversion_time =
+  /*Adafruit_I2CRegisterBits voltage_conversion_time =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 9);
-  return (INA2XX_ConversionTime)voltage_conversion_time.read();
+  return (INA2XX_ConversionTime)voltage_conversion_time.read();*/
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  return (INA2XX_ConversionTime)((adc_config >> 9) & 0x7); // Bits 11:9
 }
 /**************************************************************************/
 /*!
@@ -421,9 +423,14 @@ INA2XX_ConversionTime Adafruit_INA2xx::getVoltageConversionTime(void) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setVoltageConversionTime(INA2XX_ConversionTime time) {
-  Adafruit_I2CRegisterBits voltage_conversion_time =
+  /*Adafruit_I2CRegisterBits voltage_conversion_time =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 9);
-  voltage_conversion_time.write(time);
+  voltage_conversion_time.write(time);*/
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  adc_config &= ~(0x7 << 9);        // Clear the bits (11:9)
+  adc_config |= (time << 9);        // Set the new time
+  write_register_16bit(INA2XX_REG_ADCCFG, adc_config);
+  
 }
 /**************************************************************************/
 /*!
@@ -432,9 +439,11 @@ void Adafruit_INA2xx::setVoltageConversionTime(INA2XX_ConversionTime time) {
 */
 /**************************************************************************/
 INA2XX_ConversionTime Adafruit_INA2xx::getTemperatureConversionTime(void) {
-  Adafruit_I2CRegisterBits temperature_conversion_time =
+  /*Adafruit_I2CRegisterBits temperature_conversion_time =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 3);
-  return (INA2XX_ConversionTime)temperature_conversion_time.read();
+  return (INA2XX_ConversionTime)temperature_conversion_time.read();*/
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  return (INA2XX_ConversionTime)((adc_config >> 3) & 0x7); // Bits 5:3
 }
 /**************************************************************************/
 /*!
@@ -444,9 +453,13 @@ INA2XX_ConversionTime Adafruit_INA2xx::getTemperatureConversionTime(void) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setTemperatureConversionTime(INA2XX_ConversionTime time) {
-  Adafruit_I2CRegisterBits temperature_conversion_time =
+  /*dafruit_I2CRegisterBits temperature_conversion_time =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 3);
-  temperature_conversion_time.write(time);
+  temperature_conversion_time.write(time);*/
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  adc_config &= ~(0x7 << 3);        // Clear the bits (5:3)
+  adc_config |= (time << 3);        // Set the new time
+  write_register_16bit(INA2XX_REG_ADCCFG, adc_config);
 }
 
 /**************************************************************************/
@@ -456,9 +469,11 @@ void Adafruit_INA2xx::setTemperatureConversionTime(INA2XX_ConversionTime time) {
 */
 /**************************************************************************/
 bool Adafruit_INA2xx::conversionReady(void) {
-  Adafruit_I2CRegisterBits conversion_ready =
+  /*Adafruit_I2CRegisterBits conversion_ready =
       Adafruit_I2CRegisterBits(Diag_Alert, 1, 1);
-  return conversion_ready.read();
+  return conversion_ready.read();*/
+  uint16_t diag_alrt = read_register_16bit(INA2XX_REG_DIAGALRT);
+  return (diag_alrt >> 1) & 1; // Check CNVR bit (1)
 }
 
 /**************************************************************************/
@@ -468,9 +483,11 @@ bool Adafruit_INA2xx::conversionReady(void) {
 */
 /**************************************************************************/
 INA2XX_AlertPolarity Adafruit_INA2xx::getAlertPolarity(void) {
-  Adafruit_I2CRegisterBits alert_polarity =
+  /*Adafruit_I2CRegisterBits alert_polarity =
       Adafruit_I2CRegisterBits(Diag_Alert, 1, 12);
-  return (INA2XX_AlertPolarity)alert_polarity.read();
+  return (INA2XX_AlertPolarity)alert_polarity.read();*/
+  uint16_t diag_alrt = read_register_16bit(INA2XX_REG_DIAGALRT);
+  return (INA2XX_AlertPolarity)((diag_alrt >> 12) & 1); // Check APOL bit (12)
 }
 /**************************************************************************/
 /*!
@@ -480,9 +497,13 @@ INA2XX_AlertPolarity Adafruit_INA2xx::getAlertPolarity(void) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setAlertPolarity(INA2XX_AlertPolarity polarity) {
-  Adafruit_I2CRegisterBits alert_polarity =
+  /*Adafruit_I2CRegisterBits alert_polarity =
       Adafruit_I2CRegisterBits(Diag_Alert, 1, 12);
-  alert_polarity.write(polarity);
+  alert_polarity.write(polarity);*/
+  uint16_t diag_alrt = read_register_16bit(INA2XX_REG_DIAGALRT);
+  diag_alrt &= ~(1 << 12);          // Clear APOL bit (12)
+  diag_alrt |= (polarity << 12);    // Set new polarity
+  write_register_16bit(INA2XX_REG_DIAGALRT, diag_alrt);
 }
 /**************************************************************************/
 /*!
@@ -491,9 +512,11 @@ void Adafruit_INA2xx::setAlertPolarity(INA2XX_AlertPolarity polarity) {
 */
 /**************************************************************************/
 INA2XX_AlertLatch Adafruit_INA2xx::getAlertLatch(void) {
-  Adafruit_I2CRegisterBits alert_latch =
+  /*Adafruit_I2CRegisterBits alert_latch =
       Adafruit_I2CRegisterBits(Diag_Alert, 1, 15);
-  return (INA2XX_AlertLatch)alert_latch.read();
+  return (INA2XX_AlertLatch)alert_latch.read();*/
+  uint16_t diag_alrt = read_register_16bit(INA2XX_REG_DIAGALRT);
+  return (INA2XX_AlertLatch)((diag_alrt >> 15) & 1); // Check ALATCH bit (15)
 }
 /**************************************************************************/
 /*!
@@ -503,9 +526,13 @@ INA2XX_AlertLatch Adafruit_INA2xx::getAlertLatch(void) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setAlertLatch(INA2XX_AlertLatch state) {
-  Adafruit_I2CRegisterBits alert_latch =
+  /*Adafruit_I2CRegisterBits alert_latch =
       Adafruit_I2CRegisterBits(Diag_Alert, 1, 15);
-  alert_latch.write(state);
+  alert_latch.write(state);*/
+  uint16_t diag_alrt = read_register_16bit(INA2XX_REG_DIAGALRT);
+  diag_alrt &= ~(1 << 15);          // Clear ALATCH bit (15)
+  diag_alrt |= (state << 15);       // Set new state
+  write_register_16bit(INA2XX_REG_DIAGALRT, diag_alrt);
 }
 /**************************************************************************/
 /*!
@@ -514,9 +541,11 @@ void Adafruit_INA2xx::setAlertLatch(INA2XX_AlertLatch state) {
 */
 /**************************************************************************/
 uint16_t Adafruit_INA2xx::alertFunctionFlags(void) {
-  Adafruit_I2CRegisterBits alert_flags =
+  /*Adafruit_I2CRegisterBits alert_flags =
       Adafruit_I2CRegisterBits(Diag_Alert, 12, 0);
-  return alert_flags.read();
+  return alert_flags.read();*/
+  uint16_t diag_alrt = read_register_16bit(INA2XX_REG_DIAGALRT);
+  return diag_alrt & 0xFFF; // Return alert flags (bits 11:0)
 }
 /**
  * @brief reads 16 bit register

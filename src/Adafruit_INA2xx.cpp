@@ -29,7 +29,7 @@
  *     v1.0 - First release
  */
 
-#include "Adafruit_INA2xx.h"
+#include "ina228/Adafruit_INA2xx.h"
 
 /*!
  *    @brief  Instantiates a new INA2xx class
@@ -49,33 +49,44 @@ Adafruit_INA2xx::Adafruit_INA2xx(void) {}
  *            the manufacturer ID is Texas Instruments: 0x5449), otherwise
  * false.
  */
-bool Adafruit_INA2xx::begin(uint8_t i2c_address, TwoWire* theWire,
-                            bool skipReset) {
-  i2c_dev = new Adafruit_I2CDevice(i2c_address, theWire);
-
-  if (!i2c_dev->begin()) {
+namespace ina228 {
+Adafruit_INA2xx::Adafruit_INA2xx(std::string i2c_bus, uint8_t i2c_addr) : i2c_bus_(i2c_bus.c_str()), i2c_addr_(i2c_addr) {}
+Adafruit_INA2xx::~Adafruit_INA2xx()
+{
+  if (fd_ >= 0) {
+    close(fd_);
+  }
+}
+bool Adafruit_INA2xx::begin(bool skipReset) {
+  // Open i2c port
+  if((fd_ = open(i2c_bus_, O_RDWR)) < 0) {
     return false;
   }
+  // Flow control
+  if(ioctl(fd_, I2C_SLAVE, i2c_addr_) < 0) {
+    return false;
+  }
+  return true;
 
-  Adafruit_I2CRegister* device_register =
+  /*Adafruit_I2CRegister* device_register =
       new Adafruit_I2CRegister(i2c_dev, INA2XX_REG_DVC_UID, 2, MSBFIRST);
   Adafruit_I2CRegister* mfg_register =
       new Adafruit_I2CRegister(i2c_dev, INA2XX_REG_MFG_UID, 2, MSBFIRST);
   Adafruit_I2CRegisterBits* device_id =
-      new Adafruit_I2CRegisterBits(device_register, 12, 4);
+      new Adafruit_I2CRegisterBits(device_register, 12, 4);*/
 
   // Check manufacturer ID (should be 0x5449 for Texas Instruments)
-  uint16_t mfg_id = mfg_register->read();
+  uint16_t mfg_id = read_register_16bit(INA2XX_REG_MFG_UID);
   if (mfg_id != 0x5449) {
     return false;
   }
 
   // Store device ID for validation in derived classes
-  _device_id = device_id->read();
+  //_device_id = device_id->read();
 
-  Config = new Adafruit_I2CRegister(i2c_dev, INA2XX_REG_CONFIG, 2, MSBFIRST);
-  ADC_Config =
-      new Adafruit_I2CRegister(i2c_dev, INA2XX_REG_ADCCFG, 2, MSBFIRST);
+  /*Config = new Adafruit_I2CRegister(i2c_dev, INA2XX_REG_CONFIG, 2, MSBFIRST);
+  //ADC_Config =
+  //    new Adafruit_I2CRegister(i2c_dev, INA2XX_REG_ADCCFG, 2, MSBFIRST);
   Diag_Alert =
       new Adafruit_I2CRegister(i2c_dev, INA2XX_REG_DIAGALRT, 2, MSBFIRST);
 
@@ -84,6 +95,11 @@ bool Adafruit_INA2xx::begin(uint8_t i2c_address, TwoWire* theWire,
     delay(2); // delay 2ms to give time for first measurement to finish
   }
   return true;
+  */
+ if(!skipReset) {
+  reset();
+  usleep(2000);
+ }
 }
 /**************************************************************************/
 /*!
@@ -92,12 +108,17 @@ bool Adafruit_INA2xx::begin(uint8_t i2c_address, TwoWire* theWire,
 */
 /**************************************************************************/
 void Adafruit_INA2xx::reset(void) {
+  uint16_t config_val = read_register_16bit(INA2XX_REG_CONFIG);
+  config_val |= (1<<15); // Set RST Bit
+  write_register_16bit(INA2XX_REG_CONFIG, config_val);
+  setMode(INA2XX_MODE_CONTINUOUS);
+  /*
   Adafruit_I2CRegisterBits reset = Adafruit_I2CRegisterBits(Config, 1, 15);
   reset.write(1);
   Adafruit_I2CRegisterBits alert_conv =
       Adafruit_I2CRegisterBits(Diag_Alert, 1, 14);
   alert_conv.write(1);
-  setMode(INA2XX_MODE_CONTINUOUS);
+  setMode(INA2XX_MODE_CONTINUOUS);*/
 }
 
 /**************************************************************************/
@@ -134,10 +155,22 @@ void Adafruit_INA2xx::setShunt(float shunt_res, float max_current) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setADCRange(uint8_t adc_range) {
+  uint16_t config_val = read_register_16bit(INA2XX_REG_CONFIG);
+
+  if (adc_range == 0) {
+    // Clear bit 4 for +/-163.84 mV range
+    config_val &= ~(1 << 4);
+  } else {
+    // Set bit 4 for +/-40.96 mV range
+    config_val |= (1 << 4);
+  }
+
+  write_register_16bit(INA2XX_REG_CONFIG, config_val);
+  /*
   Adafruit_I2CRegisterBits adc_range_bit =
       Adafruit_I2CRegisterBits(Config, 1, 4);
   adc_range_bit.write(adc_range);
-  _updateShuntCalRegister();
+  _updateShuntCalRegister();*/
 }
 
 /**************************************************************************/
@@ -147,7 +180,8 @@ void Adafruit_INA2xx::setADCRange(uint8_t adc_range) {
 */
 /**************************************************************************/
 uint8_t Adafruit_INA2xx::getADCRange() {
-  return (Config->read() >> 4) & 1;
+  int16_t config_val = read_register_16bit(INA2XX_REG_CONFIG);
+  return (config_val >> 4) & 1;
 }
 
 /**************************************************************************/
@@ -159,9 +193,10 @@ uint8_t Adafruit_INA2xx::getADCRange() {
 */
 /**************************************************************************/
 float Adafruit_INA2xx::readDieTemp(void) {
-  Adafruit_I2CRegister temp =
+  /*Adafruit_I2CRegister temp =
       Adafruit_I2CRegister(i2c_dev, INA2XX_REG_DIETEMP, 2, MSBFIRST);
-  int16_t t = temp.read();
+  int16_t t = temp.read();*/
+  int16_t t = read_register_16bit(INA2XX_REG_DIETEMP);
   // INA228 uses 16 bits for temperature with 7.8125 m°C/LSB
   return (float)t * 7.8125 / 1000.0;
 }
@@ -173,11 +208,12 @@ float Adafruit_INA2xx::readDieTemp(void) {
 */
 /**************************************************************************/
 float Adafruit_INA2xx::readCurrent(void) {
-  Adafruit_I2CRegister current =
+  int32_t i = read_register_24bit_signed(INA2XX_REG_CURRENT);
+  /*Adafruit_I2CRegister current =
       Adafruit_I2CRegister(i2c_dev, INA2XX_REG_CURRENT, 3, MSBFIRST);
-  int32_t i = current.read();
-  if (i & 0x800000)
-    i |= 0xFF000000;
+  int32_t i = current.read();*/
+  /*if (i & 0x800000) signed logic
+    i |= 0xFF000000;*/
   return (float)i / 16.0 * _current_lsb * 1000.0;
 }
 
@@ -201,11 +237,12 @@ float Adafruit_INA2xx::getCurrent_mA(void) {
 */
 /**************************************************************************/
 float Adafruit_INA2xx::readBusVoltage(void) {
-  Adafruit_I2CRegister bus_voltage =
-      Adafruit_I2CRegister(i2c_dev, INA2XX_REG_VBUS, 3, MSBFIRST);
+  uint32_t bus_voltage = read_register_24bit_unsigned(INA2XX_REG_VBUS);
+  /*Adafruit_I2CRegister bus_voltage =
+      Adafruit_I2CRegister(i2c_dev, INA2XX_REG_VBUS, 3, MSBFIRST);*/
   // INA228 uses 195.3125 µV/LSB (microvolts) for bus voltage,
   // so we need to divide by 1e6 to get Volts
-  return (float)((uint32_t)bus_voltage.read() >> 4) * 195.3125 / 1e6;
+  return (float)((uint32_t)bus_voltage >> 4) * 195.3125 / 1e6;
 }
 
 /**************************************************************************/
@@ -229,12 +266,13 @@ float Adafruit_INA2xx::readShuntVoltage(void) {
   if (getADCRange()) {
     scale = 78.125;
   }
-
-  Adafruit_I2CRegister shunt_voltage =
+  uint32_t v = read_register_24bit_signed(INA2XX_REG_VBUS);
+  /*Adafruit_I2CRegister shunt_voltage =
       Adafruit_I2CRegister(i2c_dev, INA2XX_REG_VSHUNT, 3, MSBFIRST);
-  int32_t v = shunt_voltage.read();
+  int32_t v = shunt_voltage.read();*/
+  /* signed logic
   if (v & 0x800000)
-    v |= 0xFF000000;
+    v |= 0xFF000000;*/
   return (float)v / 16.0 * scale / 1000000.0;
 }
 
@@ -255,9 +293,10 @@ float Adafruit_INA2xx::getShuntVoltage_mV(void) {
 */
 /**************************************************************************/
 float Adafruit_INA2xx::readPower(void) {
-  Adafruit_I2CRegister power =
-      Adafruit_I2CRegister(i2c_dev, INA2XX_REG_POWER, 3, MSBFIRST);
-  return (float)power.read() * 3.2 * _current_lsb * 1000;
+  /*Adafruit_I2CRegister power =
+      Adafruit_I2CRegister(i2c_dev, INA2XX_REG_POWER, 3, MSBFIRST);*/
+  uint32_t power = read_register_24bit_unsigned(INA2XX_REG_POWER);
+  return (float)power * 3.2 * _current_lsb * 1000;
 }
 
 /**************************************************************************/
@@ -277,8 +316,8 @@ float Adafruit_INA2xx::getPower_mW(void) {
 */
 /**************************************************************************/
 INA2XX_MeasurementMode Adafruit_INA2xx::getMode(void) {
-  Adafruit_I2CRegisterBits mode = Adafruit_I2CRegisterBits(ADC_Config, 4, 12);
-  return (INA2XX_MeasurementMode)mode.read();
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  return (INA2XX_MeasurementMode)((adc_config >> 12) & 0xF);
 }
 /**************************************************************************/
 /*!
@@ -288,8 +327,14 @@ INA2XX_MeasurementMode Adafruit_INA2xx::getMode(void) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setMode(INA2XX_MeasurementMode new_mode) {
+  /*
   Adafruit_I2CRegisterBits mode = Adafruit_I2CRegisterBits(ADC_Config, 4, 12);
   mode.write(new_mode);
+  */
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  adc_config &= ~(0xF << 12);       // Clear the mode bits (15:12)
+  adc_config |= (new_mode << 12);   // Set the new mode
+  write_register_16bit(INA2XX_REG_ADCCFG, adc_config);
 }
 /**************************************************************************/
 /*!
@@ -298,9 +343,13 @@ void Adafruit_INA2xx::setMode(INA2XX_MeasurementMode new_mode) {
 */
 /**************************************************************************/
 INA2XX_AveragingCount Adafruit_INA2xx::getAveragingCount(void) {
+  /*
   Adafruit_I2CRegisterBits averaging_count =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 0);
   return (INA2XX_AveragingCount)averaging_count.read();
+  */
+ uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  return (INA2XX_AveragingCount)(adc_config & 0x7); // Bits 2:0
 }
 /**************************************************************************/
 /*!
@@ -310,9 +359,15 @@ INA2XX_AveragingCount Adafruit_INA2xx::getAveragingCount(void) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setAveragingCount(INA2XX_AveragingCount count) {
-  Adafruit_I2CRegisterBits averaging_count =
+  /*
+    Adafruit_I2CRegisterBits averaging_count =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 0);
   averaging_count.write(count);
+  */
+ uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  adc_config &= ~0x7;               // Clear averaging bits (2:0)
+  adc_config |= count;              // Set new averaging count
+  write_register_16bit(INA2XX_REG_ADCCFG, adc_config);
 }
 /**************************************************************************/
 /*!
@@ -321,9 +376,13 @@ void Adafruit_INA2xx::setAveragingCount(INA2XX_AveragingCount count) {
 */
 /**************************************************************************/
 INA2XX_ConversionTime Adafruit_INA2xx::getCurrentConversionTime(void) {
+  /*
   Adafruit_I2CRegisterBits current_conversion_time =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 6);
   return (INA2XX_ConversionTime)current_conversion_time.read();
+  */
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  return (INA2XX_ConversionTime)((adc_config >> 6) & 0x7); // Bits 8:6
 }
 /**************************************************************************/
 /*!
@@ -333,9 +392,15 @@ INA2XX_ConversionTime Adafruit_INA2xx::getCurrentConversionTime(void) {
 */
 /**************************************************************************/
 void Adafruit_INA2xx::setCurrentConversionTime(INA2XX_ConversionTime time) {
-  Adafruit_I2CRegisterBits current_conversion_time =
+  /*
+    Adafruit_I2CRegisterBits current_conversion_time =
       Adafruit_I2CRegisterBits(ADC_Config, 3, 6);
   current_conversion_time.write(time);
+  */
+  uint16_t adc_config = read_register_16bit(INA2XX_REG_ADCCFG);
+  adc_config &= ~(0x7 << 6);        // Clear the bits (8:6)
+  adc_config |= (time << 6);        // Set the new time
+  write_register_16bit(INA2XX_REG_ADCCFG, adc_config);
 }
 /**************************************************************************/
 /*!
@@ -452,4 +517,86 @@ uint16_t Adafruit_INA2xx::alertFunctionFlags(void) {
   Adafruit_I2CRegisterBits alert_flags =
       Adafruit_I2CRegisterBits(Diag_Alert, 12, 0);
   return alert_flags.read();
+}
+/**
+ * @brief reads 16 bit register
+ * @return read
+ */
+int32_t Adafruit_INA2xx::read_register_16bit(uint8_t reg) {
+  if(fd_ < 0) return -1;
+  uint8_t write_buf[1] = {reg};
+  if(write(fd_, write_buf, 1) != 1) {
+    return -1;
+  }
+  uint8_t read_buf[2];
+    if (read(fd_, read_buf, 2) != 2) {
+        return -1;
+    }
+    // Combine MSB and LSB, convert from network byte order (big-endian)
+    return ntohs(*(reinterpret_cast<uint16_t*>(read_buf)));
+  
+}
+
+/**
+ * @brief reads 24 bit register signed
+ * @return signed 24 bit
+ */
+int32_t Adafruit_INA2xx::read_register_24bit_signed(uint8_t reg)
+{
+    if (fd_ < 0) return -1;
+    uint8_t write_buf[1] = {reg};
+    if (write(fd_, write_buf, 1) != 1) {
+        return -1;
+    }
+    uint8_t read_buf[3];
+    if (read(fd_, read_buf, 3) != 3) {
+        return -1;
+    }
+    // Combine 3 bytes into a 32-bit integer (big-endian)
+    int32_t value = (read_buf[0] << 16) | (read_buf[1] << 8) | read_buf[2];
+    
+    // Sign-extend from 24 bits to 32 bits
+    if (value & 0x800000) {
+        value |= 0xFF000000;
+    }
+    return value;
+}
+
+/**
+ * @brief reads 24 bits from register
+ * @return unsigned
+ */
+uint32_t Adafruit_INA2xx::read_register_24bit_unsigned(uint8_t reg)
+{
+    if (fd_ < 0) return -1;
+    uint8_t write_buf[1] = {reg};
+    if (write(fd_, write_buf, 1) != 1) {
+        return -1;
+    }
+    uint8_t read_buf[3];
+    if (read(fd_, read_buf, 3) != 3) {
+        return -1;
+    }
+    // Combine 3 bytes into a 32-bit integer (big-endian)
+    return (read_buf[0] << 16) | (read_buf[1] << 8) | read_buf[2];
+}
+
+/**
+ * @brief writes 16 bits to register
+ */
+void Adafruit_INA2xx::write_register_16bit(uint8_t reg, uint16_t value)
+{
+    if (fd_ < 0) return;
+    // Convert value to network byte order (big-endian)
+    uint16_t network_value = htons(value);
+    uint8_t buf[3];
+    buf[0] = reg;
+    buf[1] = (network_value >> 8) & 0xFF; // MSB
+    buf[2] = network_value & 0xFF;       // LSB
+    
+    if (write(fd_, buf, 3) != 3) {
+        std::cerr << "Failed to write to register " << (int)reg << std::endl;
+    }
+}
+
 }

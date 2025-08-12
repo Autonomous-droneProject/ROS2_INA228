@@ -1,6 +1,6 @@
 /*!
  *  @file Adafruit_INA2xx.h
- *
+ *  @authors Aldem Pido, Adafruit
  * 	I2C Driver base class for INA2xx Current and Power sensors
  *
  * 	This is a library for the Adafruit INA228 breakout:
@@ -9,7 +9,8 @@
  * 	Adafruit invests time and resources providing this open source code,
  *  please support Adafruit and open-source hardware by purchasing products from
  * 	Adafruit!
- *  Updated for ROS2 Linux
+ *  
+ * Updated for ROS2 Linux - Aldem Pido
  *
  *	BSD license (see license.txt)
  */
@@ -17,7 +18,21 @@
 #ifndef _ADAFRUIT_INA2XX_H
 #define _ADAFRUIT_INA2XX_H
 
+#include <iostream>
+#include <string>
 #include <cstdint>
+#include <stdio.h>
+#include <linux/i2c-dev.h> // for the ioctl() function
+#include <linux/i2c.h>
+#include <unistd.h>        // for the read() and write() function
+#include <fcntl.h>         // for the open() function include <stdio.h>
+#include <string.h>        // for the strlen() function
+#include <stdlib.h>        // for exit
+#include <sys/ioctl.h>
+#include <errno.h>
+#include <chrono>
+#include <thread>
+#include <arpa/inet.h> // For ntohs
 
 
 // Common registers for INA2xx family
@@ -151,8 +166,8 @@ typedef enum _alert_latch {
  */
 class Adafruit_INA2xx {
  public:
-  Adafruit_INA2xx();
-  virtual bool begin(uint8_t i2c_addr = INA2XX_I2CADDR_DEFAULT, bool skipReset = false);
+  Adafruit_INA2xx(std::string i2c_bus = "/dev/i2c-1", uint8_t i2c_addr = INA2XX_I2CADDR_DEFAULT);
+  virtual bool begin(bool skipReset = false);
   virtual void reset(void);
 
   virtual void setShunt(float shunt_res = 0.1, float max_current = 3.2);
@@ -197,6 +212,9 @@ class Adafruit_INA2xx {
       *Diag_Alert;              ///< BusIO Register for Diagnostic Alerts*/
 
  protected:
+  const char* i2c_bus_;
+  uint8_t i2c_addr_;
+  int fd_ = -1;
   virtual void _updateShuntCalRegister(
       void);          ///< Updates the shunt calibration register based on
                       ///< device-specific calculations
@@ -204,6 +222,11 @@ class Adafruit_INA2xx {
   float _current_lsb; ///< Current LSB value used for calculations
   //Adafruit_I2CDevice* i2c_dev; ///< I2C device interface
   uint16_t _device_id;         ///< Device ID for chip verification
+
+  int32_t read_register_16bit(uint8_t reg);
+  int32_t read_register_24bit_signed(uint8_t reg);
+  uint32_t read_register_24bit_unsigned(uint8_t reg);
+  void write_register_16bit(uint8_t reg, uint16_t value);
 };
 
 #endif

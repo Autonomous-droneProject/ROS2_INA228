@@ -144,8 +144,7 @@ namespace ina228 {
 class INA228 : public Adafruit_INA2xx {
  public:
   Adafruit_INA228();
-  bool begin(uint8_t i2c_addr = INA228_I2CADDR_DEFAULT,
-             TwoWire* theWire = &Wire, bool skipReset = false);
+  bool begin(uint8_t i2c_addr = INA228_I2CADDR_DEFAULT, bool skipReset = false);
   void reset(void) override;
 
   // INA228 specific functions
@@ -159,7 +158,7 @@ class INA228 : public Adafruit_INA2xx {
   void setShunt(float shunt_res = 0.1, float max_current = 3.2) override;
 
   // INA228 specific register pointer
-  Adafruit_I2CRegister* AlertLimit; ///< BusIO Register for AlertLimit
+  //Adafruit_I2CRegister* AlertLimit; ///< BusIO Register for AlertLimit
 
  protected:
   void _updateShuntCalRegister(void) override;

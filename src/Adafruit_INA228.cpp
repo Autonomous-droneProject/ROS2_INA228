@@ -29,11 +29,7 @@
  *     v1.0 - First release
  */
 
-#include "Adafruit_INA228.h"
-
-#include <Wire.h>
-
-#include "Arduino.h"
+#include "ina228/Adafruit_INA228.h"
 
 /*!
  *    @brief  Instantiates a new INA228 class

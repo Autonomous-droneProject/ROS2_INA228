@@ -34,6 +34,7 @@
 /*!
  *    @brief  Instantiates a new INA2xx class
  */
+namespace ina228 {
 Adafruit_INA2xx::Adafruit_INA2xx(void) {}
 
 /*!
@@ -49,7 +50,6 @@ Adafruit_INA2xx::Adafruit_INA2xx(void) {}
  *            the manufacturer ID is Texas Instruments: 0x5449), otherwise
  * false.
  */
-namespace ina228 {
 Adafruit_INA2xx::Adafruit_INA2xx(std::string i2c_bus, uint8_t i2c_addr) : i2c_bus_(i2c_bus.c_str()), i2c_addr_(i2c_addr) {}
 Adafruit_INA2xx::~Adafruit_INA2xx()
 {
@@ -627,5 +627,4 @@ void Adafruit_INA2xx::write_register_16bit(uint8_t reg, uint16_t value)
         std::cerr << "Failed to write to register " << (int)reg << std::endl;
     }
 }
-
 }

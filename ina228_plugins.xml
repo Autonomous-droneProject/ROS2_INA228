@@ -1,0 +1,9 @@
+<library path="ina228_driver">
+  <class type="ina228::INA228Device"
+         base_class_type="tca9548a::I2CDevice"
+         name="INA228">
+    <description>
+      An INA228 voltage and sensor device plugin.
+    </description>
+  </class>
+</library>

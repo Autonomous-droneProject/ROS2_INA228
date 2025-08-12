@@ -1,4 +1,5 @@
 Adafruit_INA228
+Adapted for ros2 linux!
 ===============
 [![Build Status](https://github.com/adafruit/Adafruit_INA228/workflows/Arduino%20Library%20CI/badge.svg)](https://github.com/adafruit/Adafruit_INA228/actions)
 [![Documentation](https://raw.githubusercontent.com/adafruit/ci-arduino/master/assets/doxygen_badge.svg)](https://adafruit.github.io/Adafruit_INA228/html/index.html)

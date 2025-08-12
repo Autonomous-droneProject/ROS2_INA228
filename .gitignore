@@ -4,5 +4,7 @@ Doxyfile
 .pio/
 **/.claude/settings.local.json
 *.bak
-*.txt
 *.pdf
+build/
+install/
+log/

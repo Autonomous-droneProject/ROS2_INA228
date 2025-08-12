@@ -17,7 +17,7 @@
 #ifndef _ADAFRUIT_INA228_H
 #define _ADAFRUIT_INA228_H
 
-#include "Adafruit_INA2xx.h"
+#include "ina228/Adafruit_INA2xx.h"
 
 #define INA228_I2CADDR_DEFAULT 0x40 ///< INA228 default i2c address
 #define INA228_DEVICE_ID 0x228      ///< INA228 device ID
@@ -103,6 +103,7 @@
   INA2XX_ALERT_LATCH_TRANSPARENT ///< Alias for INA2XX_ALERT_LATCH_TRANSPARENT
 ///@}
 
+namespace ina228 {
 ///@{
 /**
  * @name Legacy type aliases
@@ -140,7 +141,6 @@ typedef enum _alert_type {
  *    @brief  Class that stores state and functions for interacting with
  *            INA228 Current and Power Sensor
  */
-namespace ina228 {
 class Adafruit_INA228 : public Adafruit_INA2xx {
  public:
   Adafruit_INA228(std::string i2c_bus = "/dev/i2c-1", uint8_t i2c_addr = INA2XX_I2CADDR_DEFAULT);

@@ -56,6 +56,7 @@
 
 #define INA2XX_I2CADDR_DEFAULT 0x40 ///< INA2xx default i2c address
 
+namespace ina228 {
 /**
  * @brief Mode options.
  *
@@ -166,6 +167,8 @@ typedef enum _alert_latch {
  */
 class Adafruit_INA2xx {
  public:
+  Adafruit_INA2xx();
+  ~Adafruit_INA2xx();
   Adafruit_INA2xx(std::string i2c_bus = "/dev/i2c-1", uint8_t i2c_addr = INA2XX_I2CADDR_DEFAULT);
   virtual bool begin(bool skipReset = false);
   virtual void reset(void);
@@ -228,5 +231,5 @@ class Adafruit_INA2xx {
   uint32_t read_register_24bit_unsigned(uint8_t reg);
   void write_register_16bit(uint8_t reg, uint16_t value);
 };
-
+};
 #endif

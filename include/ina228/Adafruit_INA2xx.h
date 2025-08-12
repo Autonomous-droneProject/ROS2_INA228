@@ -9,7 +9,7 @@
  * 	Adafruit invests time and resources providing this open source code,
  *  please support Adafruit and open-source hardware by purchasing products from
  * 	Adafruit!
- *
+ *  Updated for ROS2 Linux
  *
  *	BSD license (see license.txt)
  */
@@ -17,11 +17,8 @@
 #ifndef _ADAFRUIT_INA2XX_H
 #define _ADAFRUIT_INA2XX_H
 
-#include <Adafruit_I2CDevice.h>
-#include <Adafruit_I2CRegister.h>
-#include <Wire.h>
+#include <cstdint>
 
-#include "Arduino.h"
 
 // Common registers for INA2xx family
 #define INA2XX_REG_CONFIG 0x00    ///< Configuration register
@@ -155,8 +152,7 @@ typedef enum _alert_latch {
 class Adafruit_INA2xx {
  public:
   Adafruit_INA2xx();
-  virtual bool begin(uint8_t i2c_addr = INA2XX_I2CADDR_DEFAULT,
-                     TwoWire* theWire = &Wire, bool skipReset = false);
+  virtual bool begin(uint8_t i2c_addr = INA2XX_I2CADDR_DEFAULT, bool skipReset = false);
   virtual void reset(void);
 
   virtual void setShunt(float shunt_res = 0.1, float max_current = 3.2);
@@ -196,9 +192,9 @@ class Adafruit_INA2xx {
   INA2XX_AveragingCount getAveragingCount(void);
   void setAveragingCount(INA2XX_AveragingCount count);
 
-  Adafruit_I2CRegister *Config, ///< BusIO Register for Config
+  /*Adafruit_I2CRegister *Config, ///< BusIO Register for Config
       *ADC_Config,              ///< BusIO Register for ADC Config
-      *Diag_Alert;              ///< BusIO Register for Diagnostic Alerts
+      *Diag_Alert;              ///< BusIO Register for Diagnostic Alerts*/
 
  protected:
   virtual void _updateShuntCalRegister(
@@ -206,7 +202,7 @@ class Adafruit_INA2xx {
                       ///< device-specific calculations
   float _shunt_res;   ///< Shunt resistance value in ohms
   float _current_lsb; ///< Current LSB value used for calculations
-  Adafruit_I2CDevice* i2c_dev; ///< I2C device interface
+  //Adafruit_I2CDevice* i2c_dev; ///< I2C device interface
   uint16_t _device_id;         ///< Device ID for chip verification
 };
 

@@ -140,7 +140,8 @@ typedef enum _alert_type {
  *    @brief  Class that stores state and functions for interacting with
  *            INA228 Current and Power Sensor
  */
-class Adafruit_INA228 : public Adafruit_INA2xx {
+namespace ina228 {
+class INA228 : public Adafruit_INA2xx {
  public:
   Adafruit_INA228();
   bool begin(uint8_t i2c_addr = INA228_I2CADDR_DEFAULT,
@@ -163,5 +164,7 @@ class Adafruit_INA228 : public Adafruit_INA2xx {
  protected:
   void _updateShuntCalRegister(void) override;
 };
+};
+
 
 #endif
